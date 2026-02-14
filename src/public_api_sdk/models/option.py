@@ -214,6 +214,8 @@ class PreflightMultiLegRequest(MultilegValidationMixin, BaseModel):
 
     @model_validator(mode="after")
     def validate_legs(self) -> "PreflightMultiLegRequest":
+        if self.limit_price is None:
+            raise ValueError("`limit_price` is required for PreflightMultiLegRequest")
         self.validate_legs_common()
         return self
 
@@ -367,7 +369,7 @@ class GreekValues(BaseModel):
     """The actual Greek values for an option"""
     model_config = {"populate_by_name": True}
 
-    delta: Optional[Decimal] = Field(
+    delta: Optional[float] = Field(
         None,
         description=(
             "Delta is the theoretical estimate of how much an option's value "
@@ -377,7 +379,7 @@ class GreekValues(BaseModel):
             "in the underlying stock."
         ),
     )
-    gamma: Optional[Decimal] = Field(
+    gamma: Optional[float] = Field(
         None,
         description=(
             "Gamma represents the rate of change between an option's Delta and "
@@ -386,7 +388,7 @@ class GreekValues(BaseModel):
             "changes in the underlying stock or fund."
         ),
     )
-    theta: Optional[Decimal] = Field(
+    theta: Optional[float] = Field(
         None,
         description=(
             "Theta represents the rate of change between the option price and "
@@ -395,14 +397,14 @@ class GreekValues(BaseModel):
             "decrease as the time to expiration decreases, all else equal."
         ),
     )
-    vega: Optional[Decimal] = Field(
+    vega: Optional[float] = Field(
         None,
         description=(
             "Vega measures the amount of increase or decrease in an option "
             "premium based on a 1% change in implied volatility."
         ),
     )
-    rho: Optional[Decimal] = Field(
+    rho: Optional[float] = Field(
         None,
         description=(
             "Rho represents the rate of change between an option's value and "
@@ -410,7 +412,7 @@ class GreekValues(BaseModel):
             "the interest rate."
         ),
     )
-    implied_volatility: Optional[Decimal] = Field(
+    implied_volatility: Optional[float] = Field(
         None,
         alias="impliedVolatility",
         description=(
@@ -438,12 +440,12 @@ class OptionGreeks(BaseModel):
         description="The Greek values for this option"
     )
     # Allow flat structure - Greek values can be at top level
-    delta: Optional[Decimal] = Field(None)
-    gamma: Optional[Decimal] = Field(None)
-    theta: Optional[Decimal] = Field(None)
-    vega: Optional[Decimal] = Field(None)
-    rho: Optional[Decimal] = Field(None)
-    implied_volatility: Optional[Decimal] = Field(None, alias="impliedVolatility")
+    delta: Optional[float] = Field(None)
+    gamma: Optional[float] = Field(None)
+    theta: Optional[float] = Field(None)
+    vega: Optional[float] = Field(None)
+    rho: Optional[float] = Field(None)
+    implied_volatility: Optional[float] = Field(None, alias="impliedVolatility")
 
 
 class GreeksResponse(BaseModel):

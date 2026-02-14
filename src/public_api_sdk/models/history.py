@@ -38,6 +38,7 @@ class TransactionType(str, Enum):
     TRADE = "TRADE"
     MONEY_MOVEMENT = "MONEY_MOVEMENT"
     POSITION_ADJUSTMENT = "POSITION_ADJUSTMENT"
+    ORDER_FILL = "ORDER_FILL"
 
 
 class TransactionSubType(str, Enum):
@@ -150,6 +151,11 @@ class HistoryResponsePage(BaseModel):
         serialization_alias="transactions",
         description="List of transactions",
     )
+
+    @property
+    def items(self) -> List[HistoryTransaction]:
+        """Alias for transactions."""
+        return self.transactions
     next_token: Optional[str] = Field(
         None,
         validation_alias=AliasChoices("next_token", "nextToken", "continuationToken"),

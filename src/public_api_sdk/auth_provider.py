@@ -37,6 +37,10 @@ class AuthProvider(ABC):
     def revoke_token(self) -> None:
         """Revoke the current access token."""
 
+    def force_refresh(self) -> None:
+        """Force refresh the access token regardless of validity."""
+        self.refresh_if_needed()
+
 
 class ApiKeyAuthProvider(AuthProvider):
     """Authentication provider for first party API key authentication."""
@@ -70,6 +74,10 @@ class ApiKeyAuthProvider(AuthProvider):
         """Refresh the access token if it's expired or about to expire."""
         if not self._is_token_valid():
             self._create_personal_access_token()
+
+    def force_refresh(self) -> None:
+        """Force refresh the access token regardless of validity."""
+        self._create_personal_access_token()
 
     def revoke_token(self) -> None:
         """Revoke the current access token."""

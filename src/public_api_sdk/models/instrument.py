@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 from .instrument_type import InstrumentType
 from .order import OrderInstrument
@@ -35,6 +35,15 @@ class Instrument(BaseModel):
         alias="instrumentDetails",
         description="Additional details for crypto instruments"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def build_instrument_from_flat(cls, data: Any) -> Any:
+        """Accept flat instrument data with symbol/type at top level."""
+        if isinstance(data, dict) and "instrument" not in data and "symbol" in data:
+            data = dict(data)
+            data["instrument"] = {"symbol": data.pop("symbol"), "type": data.pop("type")}
+        return data
 
 
 class InstrumentsRequest(BaseModel):

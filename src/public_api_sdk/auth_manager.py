@@ -33,6 +33,10 @@ class AuthManager:
         """Refresh the access token if it's expired or about to expire."""
         self.auth_provider.refresh_if_needed()
 
+    def force_refresh_token(self) -> None:
+        """Force refresh the access token regardless of validity."""
+        self.auth_provider.force_refresh()
+
     def revoke_current_token(self) -> None:
         """Revoke the current access token and clear it from memory."""
         self.auth_provider.revoke_token()

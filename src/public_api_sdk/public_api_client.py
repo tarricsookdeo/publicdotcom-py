@@ -413,7 +413,7 @@ class PublicApiClient:
             NewOrder object for tracking and managing the order
         """
         account_id = self.__get_account_id(account_id)
-        self.auth_manager.refresh_token_if_needed()
+        self.auth_manager.force_refresh_token()
         response = self.api_client.post(
             f"/userapigateway/trading/{account_id}/order",
             json_data=order_request.model_dump(by_alias=True, exclude_none=True),
