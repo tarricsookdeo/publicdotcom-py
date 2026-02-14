@@ -458,6 +458,8 @@ class OrderRequest(OrderValidationMixin, BaseModel):
 
 
 class OrderResponse(BaseModel):
+    model_config = {"populate_by_name": True}
+
     order_id: str = Field(..., alias="orderId")
 
 

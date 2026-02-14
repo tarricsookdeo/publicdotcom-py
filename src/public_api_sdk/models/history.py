@@ -75,16 +75,18 @@ class TransactionDirection(str, Enum):
 
 
 class HistoryTransaction(BaseModel):
-    id: str = Field(
-        ...,
+    model_config = {"populate_by_name": True}
+
+    id: Optional[str] = Field(
+        None,
         description="The id of the transaction",
     )
-    timestamp: datetime = Field(
-        ...,
+    timestamp: Optional[datetime] = Field(
+        None,
         description="The timestamp when the transaction happened",
     )
-    type: TransactionType = Field(
-        ...,
+    type: Optional[TransactionType] = Field(
+        None,
         description="The type of the transaction",
     )
     sub_type: Optional[TransactionSubType] = Field(
@@ -143,15 +145,22 @@ class HistoryResponsePage(BaseModel):
     model_config = {"populate_by_name": True}
 
     transactions: List[HistoryTransaction] = Field(
-        ...,
+        default_factory=list,
         validation_alias=AliasChoices("transactions", "items"),
         serialization_alias="transactions",
         description="List of transactions",
     )
     next_token: Optional[str] = Field(
         None,
-        alias="nextToken",
+        validation_alias=AliasChoices("next_token", "nextToken", "continuationToken"),
+        serialization_alias="nextToken",
         description="Token to retrieve the next page of results",
+    )
+    continuation_token: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("continuation_token", "continuationToken"),
+        serialization_alias="continuationToken",
+        description="Token to retrieve the next page of results (alternative field)",
     )
     start: Optional[datetime] = Field(
         None,

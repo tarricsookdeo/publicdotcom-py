@@ -242,13 +242,15 @@ class OptionDetails(BaseModel):
 
 
 class PreflightLegResponse(BaseModel):
-    instrument: OrderInstrument = Field(...)
-    side: OrderSide = Field(...)
+    model_config = {"populate_by_name": True}
+
+    instrument: Optional[OrderInstrument] = Field(None)
+    side: Optional[OrderSide] = Field(None)
     open_close_indicator: Optional[OpenCloseIndicator] = Field(
         None,
         alias="openCloseIndicator",
     )
-    ratio_quantity: int = Field(..., alias="ratioQuantity")
+    ratio_quantity: Optional[int] = Field(None, alias="ratioQuantity")
     option_details: Optional[OptionDetails] = Field(None, alias="optionDetails")
 
 

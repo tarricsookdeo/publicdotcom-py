@@ -11,6 +11,7 @@ class Trading(str, Enum):
     BUY_AND_SELL = "BUY_AND_SELL"
     LIQUIDATION_ONLY = "LIQUIDATION_ONLY"
     DISABLED = "DISABLED"
+    ENABLED = "ENABLED"  # Some APIs return this value
 
 
 class CryptoInstrumentDetails(BaseModel):
