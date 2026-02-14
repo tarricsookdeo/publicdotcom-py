@@ -315,7 +315,9 @@ class PriceIncrement(BaseModel):
 
 
 class PreflightResponse(BaseModel):
-    instrument: OrderInstrument = Field(...)
+    model_config = {"populate_by_name": True}
+
+    instrument: Optional[OrderInstrument] = Field(None)
     cusip: Optional[str] = Field(None)
     root_symbol: Optional[str] = Field(None, alias="rootSymbol")
     root_option_symbol: Optional[str] = Field(None, alias="rootOptionSymbol")
@@ -324,7 +326,7 @@ class PreflightResponse(BaseModel):
     estimated_index_option_fee: Optional[Decimal] = Field(
         None, alias="estimatedIndexOptionFee"
     )
-    order_value: Decimal = Field(..., alias="orderValue")
+    order_value: Optional[Decimal] = Field(None, alias="orderValue")
     estimated_quantity: Optional[Decimal] = Field(None, alias="estimatedQuantity")
     estimated_cost: Optional[Decimal] = Field(None, alias="estimatedCost")
     buying_power_requirement: Optional[Decimal] = Field(

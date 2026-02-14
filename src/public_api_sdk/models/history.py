@@ -140,8 +140,12 @@ class HistoryTransaction(BaseModel):
 
 
 class HistoryResponsePage(BaseModel):
+    model_config = {"populate_by_name": True}
+
     transactions: List[HistoryTransaction] = Field(
         ...,
+        validation_alias=AliasChoices("transactions", "items"),
+        serialization_alias="transactions",
         description="List of transactions",
     )
     next_token: Optional[str] = Field(

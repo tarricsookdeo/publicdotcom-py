@@ -18,7 +18,7 @@ class Quote(BaseModel):
 
     instrument: OrderInstrument = Field(...)
     outcome: QuoteOutcome = Field(
-        ...,
+        default=QuoteOutcome.SUCCESS,
         description="The outcome status of the quote request.",
     )
     last: Optional[Decimal] = Field(

@@ -220,7 +220,7 @@ class TestPriceSubscriptionManagerStress:
         """Subscribing with empty instruments list should raise ValueError."""
         manager = PriceSubscriptionManager(get_quotes_func=mock_get_quotes)
         
-        with pytest.raises(ValueError, match="at least one instrument"):
+        with pytest.raises(ValueError, match="at least one item"):
             manager.subscribe([], lambda x: None)
 
     def test_active_subscriptions_list(self, mock_get_quotes, aapl_instrument, msft_instrument):

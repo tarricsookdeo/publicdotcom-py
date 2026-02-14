@@ -235,7 +235,7 @@ class PriceSubscriptionManager:
         config: Optional[SubscriptionConfig] = None,
     ) -> str:
         if not instruments:
-            raise ValueError("At least one instrument must be provided")
+            raise ValueError("instruments must contain at least one item")
 
         subscription_id = str(uuid.uuid4())
 

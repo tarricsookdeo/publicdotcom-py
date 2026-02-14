@@ -68,13 +68,15 @@ class OptionExpirationsRequest(BaseModel):
 
 
 class OptionExpirationsResponse(BaseModel):
-    base_symbol: str = Field(
-        ...,
+    model_config = {"populate_by_name": True}
+
+    base_symbol: Optional[str] = Field(
+        None,
         alias="baseSymbol",
         description="The base symbol for which the option expirations belong.",
     )
     expirations: List[str] = Field(
-        ...,
+        default_factory=list,
         description="List of option expirations for the given symbol.",
     )
 
@@ -92,17 +94,19 @@ class OptionChainRequest(BaseModel):
 
 
 class OptionChainResponse(BaseModel):
-    base_symbol: str = Field(
-        ...,
+    model_config = {"populate_by_name": True}
+
+    base_symbol: Optional[str] = Field(
+        None,
         alias="baseSymbol",
         description="The base symbol for which the option chain belongs.",
     )
     calls: List[Quote] = Field(
-        ...,
+        default_factory=list,
         description="List of call quotes for the given option chain.",
     )
     puts: List[Quote] = Field(
-        ...,
+        default_factory=list,
         description="List of put quotes for the given option chain.",
     )
 
@@ -185,14 +189,14 @@ class PreflightMultiLegRequest(MultilegValidationMixin, BaseModel):
         None,
         description="The quantity of the spread. Must be greater than 0",
     )
-    limit_price: Decimal = Field(
-        ...,
+    limit_price: Optional[Decimal] = Field(
+        None,
         validation_alias=AliasChoices("limit_price", "limitPrice"),
         serialization_alias="limitPrice",
         description="The limit price for the order",
     )
     legs: List[OrderLegRequest] = Field(
-        ...,
+        default_factory=list,
         description="From 2-6 legs. There can be at most 1 equity leg",
     )
 
@@ -249,15 +253,17 @@ class PreflightLegResponse(BaseModel):
 
 
 class PreflightMultiLegResponse(BaseModel):
-    base_symbol: str = Field(..., alias="baseSymbol")
+    model_config = {"populate_by_name": True}
+
+    base_symbol: Optional[str] = Field(None, alias="baseSymbol")
     strategy_name: Optional[str] = Field(None, alias="strategyName")
-    legs: List[PreflightLegResponse] = Field(...)
+    legs: List[PreflightLegResponse] = Field(default_factory=list)
     estimated_commission: Optional[Decimal] = Field(None, alias="estimatedCommission")
     regulatory_fees: Optional[RegulatoryFees] = Field(None, alias="regulatoryFees")
     estimated_index_option_fee: Optional[Decimal] = Field(
         None, alias="estimatedIndexOptionFee"
     )
-    order_value: Decimal = Field(..., alias="orderValue")
+    order_value: Optional[Decimal] = Field(None, alias="orderValue")
     estimated_quantity: Optional[Decimal] = Field(None, alias="estimatedQuantity")
     estimated_cost: Optional[Decimal] = Field(None, alias="estimatedCost")
     buying_power_requirement: Optional[Decimal] = Field(
@@ -357,8 +363,10 @@ class MultilegOrderResult(BaseModel):
 
 class GreekValues(BaseModel):
     """The actual Greek values for an option"""
-    delta: Decimal = Field(
-        ...,
+    model_config = {"populate_by_name": True}
+
+    delta: Optional[Decimal] = Field(
+        None,
         description=(
             "Delta is the theoretical estimate of how much an option's value "
             "may change given a $1 move UP or DOWN in the underlying security. "
@@ -367,8 +375,8 @@ class GreekValues(BaseModel):
             "in the underlying stock."
         ),
     )
-    gamma: Decimal = Field(
-        ...,
+    gamma: Optional[Decimal] = Field(
+        None,
         description=(
             "Gamma represents the rate of change between an option's Delta and "
             "the underlying asset's price. Higher Gamma values indicate that "
@@ -376,8 +384,8 @@ class GreekValues(BaseModel):
             "changes in the underlying stock or fund."
         ),
     )
-    theta: Decimal = Field(
-        ...,
+    theta: Optional[Decimal] = Field(
+        None,
         description=(
             "Theta represents the rate of change between the option price and "
             "time, or time sensitivity—sometimes known as an option's time "
@@ -385,23 +393,23 @@ class GreekValues(BaseModel):
             "decrease as the time to expiration decreases, all else equal."
         ),
     )
-    vega: Decimal = Field(
-        ...,
+    vega: Optional[Decimal] = Field(
+        None,
         description=(
             "Vega measures the amount of increase or decrease in an option "
             "premium based on a 1% change in implied volatility."
         ),
     )
-    rho: Decimal = Field(
-        ...,
+    rho: Optional[Decimal] = Field(
+        None,
         description=(
             "Rho represents the rate of change between an option's value and "
             "a 1% change in the interest rate. This measures sensitivity to "
             "the interest rate."
         ),
     )
-    implied_volatility: Decimal = Field(
-        ...,
+    implied_volatility: Optional[Decimal] = Field(
+        None,
         alias="impliedVolatility",
         description=(
             "Implied volatility (IV) is a theoretical forecast of how volatile "
@@ -412,19 +420,35 @@ class GreekValues(BaseModel):
 
 class OptionGreeks(BaseModel):
     """Greeks for a single option symbol"""
-    symbol: str = Field(
-        ...,
+    model_config = {"populate_by_name": True}
+
+    symbol: Optional[str] = Field(
+        None,
         description="The OSI-normalized option symbol"
     )
-    greeks: GreekValues = Field(
-        ...,
+    osi_symbol: Optional[str] = Field(
+        None,
+        alias="osiSymbol",
+        description="The OSI-normalized option symbol (alternative field)"
+    )
+    greeks: Optional[GreekValues] = Field(
+        None,
         description="The Greek values for this option"
     )
+    # Allow flat structure - Greek values can be at top level
+    delta: Optional[Decimal] = Field(None)
+    gamma: Optional[Decimal] = Field(None)
+    theta: Optional[Decimal] = Field(None)
+    vega: Optional[Decimal] = Field(None)
+    rho: Optional[Decimal] = Field(None)
+    implied_volatility: Optional[Decimal] = Field(None, alias="impliedVolatility")
 
 
 class GreeksResponse(BaseModel):
     """Response containing greeks for multiple option symbols"""
+    model_config = {"populate_by_name": True}
+
     greeks: List[OptionGreeks] = Field(
-        ...,
+        default_factory=list,
         description="List of greeks for each symbol in the request"
     )

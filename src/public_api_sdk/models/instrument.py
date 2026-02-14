@@ -22,11 +22,13 @@ class CryptoInstrumentDetails(BaseModel):
 
 
 class Instrument(BaseModel):
+    model_config = {"populate_by_name": True}
+
     instrument: OrderInstrument = Field(...)
-    trading: Trading = Field(...)
-    fractional_trading: Trading = Field(..., alias="fractionalTrading")
-    option_trading: Trading = Field(..., alias="optionTrading")
-    option_spread_trading: Trading = Field(..., alias="optionSpreadTrading")
+    trading: Optional[Trading] = Field(None)
+    fractional_trading: Optional[Trading] = Field(None, alias="fractionalTrading")
+    option_trading: Optional[Trading] = Field(None, alias="optionTrading")
+    option_spread_trading: Optional[Trading] = Field(None, alias="optionSpreadTrading")
     instrument_details: Optional[CryptoInstrumentDetails] = Field(
         None,
         alias="instrumentDetails",
@@ -74,4 +76,6 @@ class InstrumentsRequest(BaseModel):
 
 
 class InstrumentsResponse(BaseModel):
-    instruments: List[Instrument] = Field(...)
+    model_config = {"populate_by_name": True}
+
+    instruments: List[Instrument] = Field(default_factory=list)
