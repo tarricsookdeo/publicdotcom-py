@@ -123,7 +123,7 @@ class TestNewOrderLifecycle:
         mock_client.get_order.return_value = sample_order_new
         
         with pytest.raises(WaitTimeoutError):
-            sample_new_order.wait_for_fill(timeout=0.1, polling_interval=0.05)
+            sample_new_order.wait_for_fill(timeout=0.05)
 
     def test_wait_for_terminal_status_filled(self, sample_new_order, mock_client, sample_order_filled):
         """wait_for_terminal_status should return when filled."""

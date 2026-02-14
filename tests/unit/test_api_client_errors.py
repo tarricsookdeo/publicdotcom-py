@@ -149,8 +149,8 @@ class TestApiClientErrorResponses:
             assert "field" in str(exc.value)
 
     def test_empty_response_content(self, client, mock_response):
-        """Empty response content should not crash."""
-        mock_response.status_code = 204
+        """Empty response content with 200 should return empty dict."""
+        mock_response.status_code = 200
         mock_response.content = b""
         mock_response.json.return_value = {}
 

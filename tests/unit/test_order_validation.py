@@ -75,14 +75,17 @@ class TestOrderExpirationValidation:
 
     def test_serialization_uses_utc_format(self):
         """GTD expiration should serialize to UTC ISO format."""
-        expiration_time = datetime(2026, 6, 15, 14, 30, 0, tzinfo=timezone.utc)
+        expiration_time = datetime.now(timezone.utc) + timedelta(days=30)
+        expiration_time = expiration_time.replace(hour=14, minute=30, second=0, microsecond=0)
         expiration = OrderExpirationRequest(
             time_in_force=TimeInForce.GTD,
             expiration_time=expiration_time,
         )
         serialized = expiration.model_dump(by_alias=True)
         assert serialized["timeInForce"] == "GTD"
-        assert serialized["expirationTime"] == "2026-06-15T14:30:00Z"
+        # Check format matches expected UTC ISO format
+        expected_time = expiration_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        assert serialized["expirationTime"] == expected_time
 
 
 class TestQuantityValidation:

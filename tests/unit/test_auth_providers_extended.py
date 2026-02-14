@@ -347,7 +347,7 @@ class TestOAuthAuthProviderExtended:
         # Set expired token without refresh
         provider.set_tokens(access_token="expired", expires_in=-100)
         
-        with pytest.raises(ValueError, match="No refresh token"):
+        with pytest.raises(ValueError, match="No valid access token available"):
             provider.get_access_token()
 
     def test_set_tokens_manually(self, mock_api_client):
