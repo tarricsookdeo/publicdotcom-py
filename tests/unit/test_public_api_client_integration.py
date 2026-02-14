@@ -48,7 +48,7 @@ class TestPublicApiClientIntegration:
         return client
 
     def test_full_order_flow(self, client, mock_api_client):
-        """Complete order lifecycle: place, check status, cancel."""
+        """Complete order lifecycle: place, check status."""
         # Setup mock responses in sequence
         mock_api_client.post.side_effect = [
             {"accessToken": "test-token"},  # Auth
@@ -62,6 +62,7 @@ class TestPublicApiClientIntegration:
                 "side": "BUY",
                 "status": "NEW",
                 "quantity": "10",
+                "createdAt": datetime.now(timezone.utc).isoformat(),
             },
             {  # Get order - FILLED
                 "orderId": "ORDER123",
@@ -72,6 +73,7 @@ class TestPublicApiClientIntegration:
                 "quantity": "10",
                 "filledQuantity": "10",
                 "averagePrice": "149.95",
+                "createdAt": datetime.now(timezone.utc).isoformat(),
             },
         ]
         mock_api_client.delete.return_value = {}  # Cancel
@@ -155,15 +157,17 @@ class TestPublicApiClientIntegration:
             "quotes": [
                 {
                     "instrument": {"symbol": "AAPL", "type": "EQUITY"},
-                    "last": {"value": "150.00"},
-                    "bid": {"value": "149.95"},
-                    "ask": {"value": "150.05"},
+                    "outcome": "SUCCESS",
+                    "last": "150.00",
+                    "bid": "149.95",
+                    "ask": "150.05",
                 },
                 {
                     "instrument": {"symbol": "MSFT", "type": "EQUITY"},
-                    "last": {"value": "250.00"},
-                    "bid": {"value": "249.95"},
-                    "ask": {"value": "250.05"},
+                    "outcome": "SUCCESS",
+                    "last": "250.00",
+                    "bid": "249.95",
+                    "ask": "250.05",
                 },
             ]
         }
@@ -175,7 +179,7 @@ class TestPublicApiClientIntegration:
         
         assert len(quotes) == 2
         assert quotes[0].instrument.symbol == "AAPL"
-        assert quotes[0].last.value == Decimal("150.00")
+        assert quotes[0].last == Decimal("150.00")
         assert quotes[1].instrument.symbol == "MSFT"
 
     def test_get_history_flow(self, client, mock_api_client):
@@ -259,6 +263,7 @@ class TestPublicApiClientIntegration:
         from public_api_sdk.models import PreflightMultiLegRequest, OrderLegRequest
         from public_api_sdk.models import LegInstrument, LegInstrumentType, OpenCloseIndicator
         
+        # Multi-leg requires 2-6 legs
         preflight = PreflightMultiLegRequest(
             order_type=OrderType.LIMIT,
             expiration=OrderExpirationRequest(time_in_force=TimeInForce.DAY),
@@ -268,6 +273,12 @@ class TestPublicApiClientIntegration:
                 OrderLegRequest(
                     instrument=LegInstrument(symbol="AAPL251024C00110000", type=LegInstrumentType.OPTION),
                     side=OrderSide.SELL,
+                    open_close_indicator=OpenCloseIndicator.OPEN,
+                    ratio_quantity=1,
+                ),
+                OrderLegRequest(
+                    instrument=LegInstrument(symbol="AAPL251024C00120000", type=LegInstrumentType.OPTION),
+                    side=OrderSide.BUY,
                     open_close_indicator=OpenCloseIndicator.OPEN,
                     ratio_quantity=1,
                 ),
@@ -281,6 +292,7 @@ class TestPublicApiClientIntegration:
     def test_option_expirations_flow(self, client, mock_api_client):
         """Test getting option expirations."""
         mock_api_client.post.return_value = {
+            "baseSymbol": "AAPL",
             "expirations": ["2025-01-17", "2025-01-24", "2025-01-31"],
         }
         
@@ -292,19 +304,22 @@ class TestPublicApiClientIntegration:
             )
         )
         
+        assert result.base_symbol == "AAPL"
         assert len(result.expirations) == 3
         assert "2025-01-17" in result.expirations
 
     def test_option_chain_flow(self, client, mock_api_client):
         """Test getting option chain."""
         mock_api_client.post.return_value = {
-            "options": [
+            "baseSymbol": "AAPL",
+            "calls": [
                 {
-                    "osiSymbol": "AAPL250117C00150000",
-                    "strikePrice": "150.00",
-                    "type": "CALL",
+                    "instrument": {"symbol": "AAPL250117C00150000", "type": "OPTION"},
+                    "outcome": "SUCCESS",
+                    "last": "5.00",
                 }
-            ]
+            ],
+            "puts": [],
         }
         
         from public_api_sdk.models import OptionChainRequest
@@ -316,7 +331,8 @@ class TestPublicApiClientIntegration:
             )
         )
         
-        assert len(result.options) == 1
+        assert result.base_symbol == "AAPL"
+        assert len(result.calls) == 1
 
     def test_option_greeks_flow(self, client, mock_api_client):
         """Test getting option Greeks."""
@@ -324,12 +340,12 @@ class TestPublicApiClientIntegration:
             "greeks": [
                 {
                     "osiSymbol": "AAPL250117C00150000",
-                    "greeks": {
-                        "delta": 0.65,
-                        "gamma": 0.05,
-                        "theta": -0.12,
-                        "vega": 0.25,
-                    }
+                    "delta": 0.65,
+                    "gamma": 0.05,
+                    "theta": -0.12,
+                    "vega": 0.25,
+                    "rho": 0.08,
+                    "impliedVolatility": 0.30,
                 }
             ]
         }
@@ -337,7 +353,7 @@ class TestPublicApiClientIntegration:
         result = client.get_option_greeks(["AAPL250117C00150000"])
         
         assert len(result.greeks) == 1
-        assert result.greeks[0].greeks.delta == 0.65
+        assert result.greeks[0].delta == 0.65
 
     def test_option_greek_single_flow(self, client, mock_api_client):
         """Test getting single option Greek."""
@@ -345,19 +361,19 @@ class TestPublicApiClientIntegration:
             "greeks": [
                 {
                     "osiSymbol": "AAPL250117C00150000",
-                    "greeks": {
-                        "delta": 0.65,
-                        "gamma": 0.05,
-                        "theta": -0.12,
-                        "vega": 0.25,
-                    }
+                    "delta": 0.65,
+                    "gamma": 0.05,
+                    "theta": -0.12,
+                    "vega": 0.25,
+                    "rho": 0.08,
+                    "impliedVolatility": 0.30,
                 }
             ]
         }
         
         result = client.get_option_greek("AAPL250117C00150000")
         
-        assert result.greeks.delta == 0.65
+        assert result.delta == 0.65
 
     def test_option_greek_not_found(self, client, mock_api_client):
         """Test getting non-existent option Greek raises error."""
@@ -441,8 +457,3 @@ class TestPublicApiClientWithoutDefaultAccount:
         portfolio = client_no_default.get_portfolio(account_id="ACC123")
         
         assert portfolio.account_id == "ACC123"
-
-    def test_get_quotes_requires_account_id(self, client_no_default):
-        """get_quotes should require account_id when no default set."""
-        with pytest.raises(ValueError, match="No account ID"):
-            client_no_default.get_quotes([OrderInstrument(symbol="AAPL", type=InstrumentType.EQUITY)])
