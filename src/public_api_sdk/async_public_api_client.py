@@ -473,21 +473,20 @@ class AsyncPublicApiClient:
 from .auth_config import ApiKeyAuthConfig, AuthConfig
 
 
-def create_async_auth_config(api_secret_key: str) -> AsyncApiKeyAuthProvider:
-    """Create async auth provider from API secret key.
+def create_async_auth_config(api_secret_key: str) -> ApiKeyAuthConfig:
+    """Create async auth configuration from API secret key.
+
+    This returns a configuration object that can later be used to create
+    an async auth provider bound to a specific AsyncApiClient instance,
+    avoiding creation of any unused or "dummy" clients here.
 
     Args:
         api_secret_key: Public.com API secret key
 
     Returns:
-        AsyncApiKeyAuthProvider configured with the API key
+        ApiKeyAuthConfig configured with the API key
     """
-    # Create a dummy async client for auth provider initialization
-    dummy_client = AsyncApiClient(base_url=PROD_BASE_URL)
-    return AsyncApiKeyAuthProvider(
-        api_client=dummy_client,
-        api_secret_key=api_secret_key,
-    )
+    return ApiKeyAuthConfig(api_secret_key=api_secret_key)
 
 
 # Re-export for convenience
