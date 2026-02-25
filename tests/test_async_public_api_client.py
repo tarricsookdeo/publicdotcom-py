@@ -16,7 +16,7 @@ from public_api_sdk import (
     AsyncPublicApiClientConfiguration,
     create_async_auth_config,
 )
-from public_api_sdk.async_public_api_client import AsyncApiKeyAuthProvider
+from public_api_sdk.auth_config import ApiKeyAuthConfig
 from public_api_sdk.models import (
     Account,
     AccountType,
@@ -45,12 +45,14 @@ def _make_async_client(default_account: Optional[str] = _ACCOUNT) -> AsyncPublic
          patch("public_api_sdk.async_public_api_client.AsyncAuthManager") as mock_async_auth_manager_cls:
         config = AsyncPublicApiClientConfiguration(default_account_number=default_account)
 
-        # Create a mock auth provider
-        mock_auth_provider = Mock(spec=AsyncApiKeyAuthProvider)
+        # Create a mock auth config (ApiKeyAuthConfig) whose create_async_provider returns a mock provider
+        mock_auth_config = Mock(spec=ApiKeyAuthConfig)
+        mock_auth_provider = Mock()
         mock_auth_provider.refresh_if_needed_async = AsyncMock()
+        mock_auth_config.create_async_provider = Mock(return_value=mock_auth_provider)
 
         client = AsyncPublicApiClient(
-            auth_config=mock_auth_provider,
+            auth_config=mock_auth_config,
             config=config,
         )
 
@@ -78,7 +80,7 @@ def _make_account_response() -> dict:
                 "accountType": "BROKERAGE",
                 "brokerageAccountType": "MARGIN",
                 "optionsLevel": "LEVEL_2",
-                "tradePermissions": ["EQUITY", "OPTIONS"],
+                "tradePermissions": "BUY_AND_SELL",
             }
         ]
     }
@@ -87,25 +89,26 @@ def _make_account_response() -> dict:
 def _make_portfolio_response() -> dict:
     """Return a mocked portfolio response."""
     return {
-        "account_id": "ACC123",
-        "account_type": "BROKERAGE",
+        "accountId": "ACC123",
+        "accountType": "BROKERAGE",
         "equity": [
             {
                 "type": "STOCK",
                 "value": "10000.00",
-                "percentage_of_portfolio": "50.0",
+                "percentageOfPortfolio": "50.0",
             },
             {
                 "type": "CASH",
                 "value": "10000.00",
-                "percentage_of_portfolio": "50.0",
+                "percentageOfPortfolio": "50.0",
             },
         ],
         "positions": [],
-        "buying_power": {
-            "cash_only_buying_power": "5000.00",
-            "buying_power": "10000.00",
-            "options_buying_power": "5000.00",
+        "orders": [],
+        "buyingPower": {
+            "cashOnlyBuyingPower": "5000.00",
+            "buyingPower": "10000.00",
+            "optionsBuyingPower": "5000.00",
         },
     }
 
@@ -117,15 +120,11 @@ def _make_quotes_response() -> dict:
             {
                 "instrument": {
                     "symbol": "AAPL",
-                    "name": "Apple Inc.",
                     "type": "EQUITY",
                 },
-                "last_price": {
-                    "last_price": "150.00",
-                },
-                "bid": {"bid_price": "149.90"},
-                "ask": {"ask_price": "150.10"},
-                "volume": 1000000,
+                "outcome": "SUCCESS",
+                "bid": "149.90",
+                "ask": "150.10",
             }
         ]
     }
@@ -143,7 +142,8 @@ class TestAsyncApiClient:
         with patch("public_api_sdk.async_public_api_client.AsyncApiClient"), \
              patch("public_api_sdk.async_public_api_client.AsyncAuthManager"):
             
-            mock_auth = Mock(spec=AsyncApiKeyAuthProvider)
+            mock_auth = Mock(spec=ApiKeyAuthConfig)
+            mock_auth.create_async_provider = Mock(return_value=Mock())
             client = AsyncPublicApiClient(auth_config=mock_auth)
             
             assert client.config.base_url == "https://api.public.com"
@@ -154,7 +154,8 @@ class TestAsyncApiClient:
         with patch("public_api_sdk.async_public_api_client.AsyncApiClient"), \
              patch("public_api_sdk.async_public_api_client.AsyncAuthManager"):
             
-            mock_auth = Mock(spec=AsyncApiKeyAuthProvider)
+            mock_auth = Mock(spec=ApiKeyAuthConfig)
+            mock_auth.create_async_provider = Mock(return_value=Mock())
             config = AsyncPublicApiClientConfiguration(
                 default_account_number="TEST123",
                 base_url="https://test.api.public.com"
@@ -181,6 +182,7 @@ class TestAsyncApiClient:
     def test_api_endpoint_property(self):
         """Test api_endpoint property getter and setter."""
         client = _make_async_client()
+        client.api_client.base_url = "https://api.public.com"
         
         # Test getter
         assert client.api_endpoint == "https://api.public.com"
@@ -258,9 +260,7 @@ class TestAsyncGetPortfolio:
 
     def test_get_portfolio_requires_account_id(self):
         """Test get_portfolio raises when no account_id available."""
-        # Construct a client without a default account to simulate missing account_id
-        config = AsyncPublicApiClientConfiguration()
-        client = AsyncPublicApiClient(configuration=config)
+        client = _make_async_client(default_account=None)
         with pytest.raises(ValueError, match="No account ID"):
             asyncio.get_event_loop().run_until_complete(client.get_portfolio())
 
@@ -302,10 +302,10 @@ class TestAsyncPlaceOrder:
         """Test place_order returns NewOrder object."""
         client = _make_async_client()
         client.api_client.post = AsyncMock(return_value={
-            "order_id": _VALID_UUID,
+            "orderId": _VALID_UUID,
         })
         
-        from public_api_sdk.models import OrderRequest, OrderSide, OrderType
+        from public_api_sdk.models import OrderRequest, OrderSide, OrderType, OrderExpirationRequest, TimeInForce
         
         order_request = OrderRequest(
             order_id=_VALID_UUID,
@@ -313,6 +313,7 @@ class TestAsyncPlaceOrder:
             order_side=OrderSide.BUY,
             order_type=OrderType.MARKET,
             quantity=Decimal("10"),
+            expiration=OrderExpirationRequest(time_in_force=TimeInForce.DAY),
         )
         
         result = await client.place_order(order_request)
@@ -363,9 +364,9 @@ class TestAsyncContextManager:
 class TestCreateAsyncAuthConfig:
     """Test create_async_auth_config helper function."""
 
-    def test_creates_auth_provider(self):
-        """Test helper creates properly configured auth provider."""
+    def test_creates_auth_config(self):
+        """Test helper creates properly configured auth config."""
         auth = create_async_auth_config("test_key")
         
-        assert isinstance(auth, AsyncApiKeyAuthProvider)
-        assert auth._secret == "test_key"
+        assert isinstance(auth, ApiKeyAuthConfig)
+        assert auth.api_secret_key == "test_key"
