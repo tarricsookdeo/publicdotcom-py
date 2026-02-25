@@ -57,6 +57,7 @@ def _make_async_client(default_account: Optional[str] = _ACCOUNT) -> AsyncPublic
         # Ensure the patched AsyncAuthManager exposes the mock auth provider with an async refresh method
         mock_auth_manager_instance = mock_async_auth_manager_cls.return_value
         mock_auth_manager_instance.auth_provider = mock_auth_provider
+        mock_auth_manager_instance.initialize_auth = AsyncMock()
         # Make sure the client uses the configured auth manager instance
         client.auth_manager = mock_auth_manager_instance
 
