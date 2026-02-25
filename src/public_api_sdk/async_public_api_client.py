@@ -105,6 +105,7 @@ class AsyncPublicApiClient:
 
     async def __aenter__(self) -> "AsyncPublicApiClient":
         """Async context manager entry."""
+        await self.auth_manager.initialize_auth()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:

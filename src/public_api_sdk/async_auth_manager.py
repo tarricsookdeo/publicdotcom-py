@@ -18,13 +18,12 @@ class AsyncAuthManager:
         super().__init__()
 
         self.auth_provider = auth_provider
-        self.initialize_auth()
 
-    def initialize_auth(self) -> None:
+    async def initialize_auth(self) -> None:
         """Initialize authentication by getting the first token."""
         try:
             # try to get an access token (will create one for API key auth)
-            self.auth_provider.get_access_token()
+            await self.auth_provider.get_access_token_async()
         except ValueError:
             # for oauth, user needs to complete the flow first
             pass
@@ -55,6 +54,14 @@ class AsyncAuthProvider:
         Returns:
             Valid access token
         """
+
+    async def get_access_token_async(self) -> str:
+        """Get a valid access token, refreshing if necessary (async version).
+
+        Returns:
+            Valid access token
+        """
+        raise NotImplementedError
 
     def refresh_if_needed(self) -> None:
         """Refresh the access token if needed."""
