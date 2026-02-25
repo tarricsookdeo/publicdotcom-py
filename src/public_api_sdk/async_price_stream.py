@@ -5,6 +5,7 @@ from typing import AsyncGenerator, Dict, List, Optional, Set
 
 from .async_public_api_client import AsyncPublicApiClient
 from .models import (
+    InstrumentType,
     OrderInstrument,
     Quote,
 )
@@ -124,6 +125,3 @@ class AsyncPriceStream:
         """Get list of active subscription IDs."""
         return list(self._subscriptions.keys())
 
-
-# Import InstrumentType for the price generator
-from .models import InstrumentType
