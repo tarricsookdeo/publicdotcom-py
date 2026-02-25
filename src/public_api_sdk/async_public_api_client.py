@@ -6,6 +6,7 @@ from .async_api_client import AsyncApiClient
 from .async_auth_manager import AsyncAuthManager, AsyncApiKeyAuthProvider
 from .models import (
     AccountsResponse,
+    AsyncNewOrder,
     GreeksResponse,
     HistoryRequest,
     HistoryResponsePage,
@@ -15,7 +16,6 @@ from .models import (
     InstrumentType,
     MultilegOrderRequest,
     MultilegOrderResult,
-    NewOrder,
     OptionChainRequest,
     OptionChainResponse,
     OptionExpirationsRequest,
@@ -378,7 +378,7 @@ class AsyncPublicApiClient:
         self,
         order_request: OrderRequest,
         account_id: Optional[str] = None,
-    ) -> NewOrder:
+    ) -> AsyncNewOrder:
         """Place a single-leg order.
 
         Args:
@@ -386,7 +386,7 @@ class AsyncPublicApiClient:
             account_id: Account ID
 
         Returns:
-            NewOrder object for tracking
+            AsyncNewOrder object for tracking
         """
         account_id = self._get_account_id(account_id)
         await self.auth_manager.auth_provider.refresh_if_needed_async()
@@ -396,18 +396,17 @@ class AsyncPublicApiClient:
         )
         order_response = OrderResponse(**response)
 
-        return NewOrder(
+        return AsyncNewOrder(
             order_id=order_response.order_id,
             account_id=account_id,
             client=self,
-            subscription_manager=None,  # Async doesn't support sync subscriptions
         )
 
     async def place_multileg_order(
         self,
         order_request: MultilegOrderRequest,
         account_id: Optional[str] = None,
-    ) -> NewOrder:
+    ) -> AsyncNewOrder:
         """Place a multi-leg order.
 
         Args:
@@ -415,7 +414,7 @@ class AsyncPublicApiClient:
             account_id: Account ID
 
         Returns:
-            NewOrder object for tracking
+            AsyncNewOrder object for tracking
         """
         account_id = self._get_account_id(account_id)
         await self.auth_manager.auth_provider.refresh_if_needed_async()
@@ -425,11 +424,10 @@ class AsyncPublicApiClient:
         )
         order_result = MultilegOrderResult(**response)
 
-        return NewOrder(
+        return AsyncNewOrder(
             order_id=order_result.order_id,
             account_id=account_id,
             client=self,
-            subscription_manager=None,
         )
 
     async def get_order(

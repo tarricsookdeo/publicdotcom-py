@@ -298,14 +298,15 @@ class TestAsyncPlaceOrder:
     """Test async order placement."""
 
     @pytest.mark.asyncio
-    async def test_place_order_returns_new_order(self):
-        """Test place_order returns NewOrder object."""
+    async def test_place_order_returns_async_new_order(self):
+        """Test place_order returns AsyncNewOrder object."""
+        from public_api_sdk.models import AsyncNewOrder, OrderRequest, OrderSide, OrderType
+        from public_api_sdk.models.order import OrderExpirationRequest, TimeInForce
+
         client = _make_async_client()
         client.api_client.post = AsyncMock(return_value={
-            "order_id": _VALID_UUID,
+            "orderId": _VALID_UUID,
         })
-        
-        from public_api_sdk.models import OrderRequest, OrderSide, OrderType
         
         order_request = OrderRequest(
             order_id=_VALID_UUID,
@@ -313,10 +314,12 @@ class TestAsyncPlaceOrder:
             order_side=OrderSide.BUY,
             order_type=OrderType.MARKET,
             quantity=Decimal("10"),
+            expiration=OrderExpirationRequest(time_in_force=TimeInForce.DAY),
         )
         
         result = await client.place_order(order_request)
         
+        assert isinstance(result, AsyncNewOrder)
         assert result.order_id == _VALID_UUID
         assert result.account_id == _ACCOUNT
 
