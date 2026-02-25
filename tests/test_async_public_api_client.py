@@ -42,25 +42,30 @@ _VALID_UUID = "550e8400-e29b-41d4-a716-446655440000"
 def _make_async_client(default_account: Optional[str] = _ACCOUNT) -> AsyncPublicApiClient:
     """Return an AsyncPublicApiClient with AsyncApiClient and AsyncAuthManager patched."""
     with patch("public_api_sdk.async_public_api_client.AsyncApiClient"), \
-         patch("public_api_sdk.async_public_api_client.AsyncAuthManager"):
+         patch("public_api_sdk.async_public_api_client.AsyncAuthManager") as mock_async_auth_manager_cls:
         config = AsyncPublicApiClientConfiguration(default_account_number=default_account)
-        
+
         # Create a mock auth provider
         mock_auth_provider = Mock(spec=AsyncApiKeyAuthProvider)
         mock_auth_provider.refresh_if_needed_async = AsyncMock()
-        
+
         client = AsyncPublicApiClient(
             auth_config=mock_auth_provider,
             config=config,
         )
-        
+
+        # Ensure the patched AsyncAuthManager exposes the mock auth provider with an async refresh method
+        mock_auth_manager_instance = mock_async_auth_manager_cls.return_value
+        mock_auth_manager_instance.auth_provider = mock_auth_provider
+        # Make sure the client uses the configured auth manager instance
+        client.auth_manager = mock_auth_manager_instance
+
         # Replace api_client with a mock
         client.api_client = AsyncMock()
         client.api_client.get = AsyncMock(return_value={})
         client.api_client.post = AsyncMock(return_value={})
         client.api_client.delete = AsyncMock()
         client.api_client.close = AsyncMock()
-        
     return client
 
 
