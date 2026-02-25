@@ -23,6 +23,7 @@ class AsyncPriceStream:
         self._subscriptions: Dict[str, Set[str]] = {}  # subscription_id -> set of symbols
         self._last_quotes: Dict[str, Quote] = {}
         self._running: Set[str] = set()
+        self._lock = asyncio.Lock()
 
     async def subscribe(
         self,
@@ -42,8 +43,9 @@ class AsyncPriceStream:
         subscription_id = str(uuid.uuid4())
         
         symbols = {inst.symbol for inst in instruments}
-        self._subscriptions[subscription_id] = symbols
-        self._running.add(subscription_id)
+        async with self._lock:
+            self._subscriptions[subscription_id] = symbols
+            self._running.add(subscription_id)
         
         return subscription_id
 
@@ -59,12 +61,17 @@ class AsyncPriceStream:
         Yields:
             Dictionary of symbol -> Quote for price changes
         """
-        if subscription_id not in self._subscriptions:
-            raise ValueError(f"Unknown subscription: {subscription_id}")
+        async with self._lock:
+            if subscription_id not in self._subscriptions:
+                raise ValueError(f"Unknown subscription: {subscription_id}")
+            symbols = set(self._subscriptions[subscription_id])
         
-        symbols = self._subscriptions[subscription_id]
-        
-        while subscription_id in self._running:
+        while True:
+            async with self._lock:
+                if subscription_id not in self._running:
+                    break
+                symbols = set(self._subscriptions.get(subscription_id, set()))
+            
             try:
                 # Build instruments list
                 instruments = [
@@ -77,13 +84,14 @@ class AsyncPriceStream:
                 
                 # Check for changes
                 changes = {}
-                for quote in quotes:
-                    symbol = quote.instrument.symbol
-                    last_quote = self._last_quotes.get(symbol)
-                    
-                    if last_quote is None or last_quote.last_price != quote.last_price:
-                        changes[symbol] = quote
-                        self._last_quotes[symbol] = quote
+                async with self._lock:
+                    for quote in quotes:
+                        symbol = quote.instrument.symbol
+                        last_quote = self._last_quotes.get(symbol)
+                        
+                        if last_quote is None or last_quote.last_price != quote.last_price:
+                            changes[symbol] = quote
+                            self._last_quotes[symbol] = quote
                 
                 if changes:
                     yield changes
@@ -101,14 +109,16 @@ class AsyncPriceStream:
         Args:
             subscription_id: Subscription ID to cancel
         """
-        self._running.discard(subscription_id)
-        if subscription_id in self._subscriptions:
-            del self._subscriptions[subscription_id]
+        async with self._lock:
+            self._running.discard(subscription_id)
+            if subscription_id in self._subscriptions:
+                del self._subscriptions[subscription_id]
 
     async def unsubscribe_all(self) -> None:
         """Unsubscribe from all price updates."""
-        self._running.clear()
-        self._subscriptions.clear()
+        async with self._lock:
+            self._running.clear()
+            self._subscriptions.clear()
 
     def get_active_subscriptions(self) -> List[str]:
         """Get list of active subscription IDs."""
