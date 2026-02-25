@@ -74,11 +74,11 @@ def _make_account_response() -> dict:
     return {
         "accounts": [
             {
-                "account_id": "ACC123",
-                "account_type": "BROKERAGE",
-                "brokerage_account_type": "MARGIN",
-                "options_level": "LEVEL_2",
-                "trade_permissions": ["EQUITY", "OPTIONS"],
+                "accountId": "ACC123",
+                "accountType": "BROKERAGE",
+                "brokerageAccountType": "MARGIN",
+                "optionsLevel": "LEVEL_2",
+                "tradePermissions": ["EQUITY", "OPTIONS"],
             }
         ]
     }
