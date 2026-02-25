@@ -1,13 +1,16 @@
 """Async price streaming with async generator support."""
 
 import asyncio
-from typing import AsyncGenerator, Dict, List, Optional, Set
+import logging
+from typing import AsyncGenerator, Callable, Dict, List, Optional, Set
 
 from .async_public_api_client import AsyncPublicApiClient
 from .models import (
     OrderInstrument,
     Quote,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class AsyncPriceStream:
@@ -52,11 +55,15 @@ class AsyncPriceStream:
     async def price_generator(
         self,
         subscription_id: str,
+        on_error: Optional[Callable[[Exception], None]] = None,
     ) -> AsyncGenerator[Dict[str, Quote], None]:
         """Generate price updates as async generator.
 
         Args:
             subscription_id: Subscription ID from subscribe()
+            on_error: Optional callback invoked with the exception when a polling
+                error occurs. If not provided, errors are logged and polling
+                continues.
 
         Yields:
             Dictionary of symbol -> Quote for price changes
@@ -97,8 +104,9 @@ class AsyncPriceStream:
                     yield changes
                     
             except Exception as e:
-                # Log and continue
-                print(f"Error fetching quotes: {e}")
+                logger.exception("Error fetching quotes for subscription %s", subscription_id)
+                if on_error is not None:
+                    on_error(e)
             
             # Wait before next poll
             await asyncio.sleep(1.0)
