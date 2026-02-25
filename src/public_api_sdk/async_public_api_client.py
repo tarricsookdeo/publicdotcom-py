@@ -4,6 +4,7 @@ from typing import AsyncGenerator, List, Optional
 
 from .async_api_client import AsyncApiClient
 from .async_auth_manager import AsyncAuthManager, AsyncApiKeyAuthProvider
+from .auth_config import ApiKeyAuthConfig
 from .models import (
     AccountsResponse,
     GreeksResponse,
@@ -69,13 +70,13 @@ class AsyncPublicApiClient:
 
     def __init__(
         self,
-        auth_config: "AsyncApiKeyAuthProvider",
+        auth_config: "ApiKeyAuthConfig",
         config: AsyncPublicApiClientConfiguration = AsyncPublicApiClientConfiguration.DEFAULT,
     ) -> None:
         """Initialize the async trading client.
 
         Args:
-            auth_config: Async authentication configuration
+            auth_config: Authentication configuration (e.g. ApiKeyAuthConfig)
             config: Configuration for the async API client
         """
         super().__init__()
@@ -85,8 +86,10 @@ class AsyncPublicApiClient:
         # Create async HTTP client
         self.api_client = AsyncApiClient(base_url=config.get_base_url())
 
-        # Create async auth manager
-        self.auth_manager = AsyncAuthManager(auth_provider=auth_config)
+        # Create async auth manager, binding the provider to the same api_client
+        self.auth_manager = AsyncAuthManager(
+            auth_provider=auth_config.create_async_provider(self.api_client)
+        )
 
     @property
     def api_endpoint(self) -> str:
@@ -467,10 +470,6 @@ class AsyncPublicApiClient:
         account_id = self._get_account_id(account_id)
         await self.auth_manager.auth_provider.refresh_if_needed_async()
         await self.api_client.delete(f"/userapigateway/trading/{account_id}/order/{order_id}")
-
-
-# For backward compatibility with auth_config
-from .auth_config import ApiKeyAuthConfig, AuthConfig
 
 
 def create_async_auth_config(api_secret_key: str) -> ApiKeyAuthConfig:

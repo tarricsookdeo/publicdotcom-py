@@ -4,6 +4,8 @@ from .auth_provider import ApiKeyAuthProvider, OAuthAuthProvider
 
 if TYPE_CHECKING:
     from .api_client import ApiClient
+    from .async_api_client import AsyncApiClient
+    from .async_auth_manager import AsyncApiKeyAuthProvider
     from .auth_provider import AuthProvider
 
 
@@ -39,6 +41,14 @@ class ApiKeyAuthConfig:  # pylint: disable=too-few-public-methods
 
     def create_provider(self, api_client: "ApiClient") -> "AuthProvider":
         return ApiKeyAuthProvider(
+            api_client=api_client,
+            api_secret_key=self.api_secret_key,
+            validity_minutes=self.validity_minutes,
+        )
+
+    def create_async_provider(self, api_client: "AsyncApiClient") -> "AsyncApiKeyAuthProvider":
+        from .async_auth_manager import AsyncApiKeyAuthProvider
+        return AsyncApiKeyAuthProvider(
             api_client=api_client,
             api_secret_key=self.api_secret_key,
             validity_minutes=self.validity_minutes,
