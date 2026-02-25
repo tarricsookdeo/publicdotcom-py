@@ -253,7 +253,7 @@ class TestAsyncGetPortfolio:
 
     def test_get_portfolio_requires_account_id(self):
         """Test get_portfolio raises when no account_id available."""
-        client = _make_async_client(config=AsyncPublicApiClientConfiguration())
+        client = _make_async_client(default_account=None)
         
         with pytest.raises(ValueError, match="No account ID"):
             asyncio.get_event_loop().run_until_complete(client.get_portfolio())
