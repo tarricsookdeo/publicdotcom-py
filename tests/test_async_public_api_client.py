@@ -286,7 +286,7 @@ class TestAsyncGetQuotes:
         await client.get_quotes(instruments)
         
         call_args = client.api_client.post.call_args
-        assert "quotes" in call_args.kwargs.get("json_data", {})
+        assert "instruments" in call_args.kwargs.get("json_data", {})
 
 
 class TestAsyncPlaceOrder:
