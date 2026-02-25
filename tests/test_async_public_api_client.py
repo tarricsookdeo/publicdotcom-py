@@ -212,7 +212,7 @@ class TestAsyncGetAccounts:
         
         await client.get_accounts()
         
-        client.api_client.get.assert_calledapigateway/tr_once_with("/userading/account")
+        client.api_client.get.assert_called_once_with("/userapigateway/trading/account")
 
 
 class TestAsyncGetPortfolio:
