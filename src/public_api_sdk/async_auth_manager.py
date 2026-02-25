@@ -110,13 +110,14 @@ class AsyncApiKeyAuthProvider(AsyncAuthProvider):
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    # If we're in an async context, we need to handle differently
-                    # For sync calls, just create new token
-                    pass
+                    # If we're in an async context, schedule the refresh on the running loop
+                    loop.create_task(self._create_personal_access_token())
                 else:
+                    # For synchronous calls, run the refresh to completion
                     loop.run_until_complete(self._create_personal_access_token())
             except RuntimeError:
-                pass
+                # If no event loop is available, create one and run the refresh
+                asyncio.run(self._create_personal_access_token())
 
     async def refresh_if_needed_async(self) -> None:
         """Refresh the access token if it's expired or about to expire (async version)."""
