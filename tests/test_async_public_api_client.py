@@ -63,6 +63,7 @@ def _make_async_client(default_account: Optional[str] = _ACCOUNT) -> AsyncPublic
 
         # Replace api_client with a mock
         client.api_client = AsyncMock()
+        client.api_client.base_url = "https://api.public.com"
         client.api_client.get = AsyncMock(return_value={})
         client.api_client.post = AsyncMock(return_value={})
         client.api_client.delete = AsyncMock()
@@ -88,25 +89,24 @@ def _make_account_response() -> dict:
 def _make_portfolio_response() -> dict:
     """Return a mocked portfolio response."""
     return {
-        "account_id": "ACC123",
-        "account_type": "BROKERAGE",
+        "accountId": "ACC123",
+        "accountType": "BROKERAGE",
         "equity": [
             {
                 "type": "STOCK",
                 "value": "10000.00",
-                "percentage_of_portfolio": "50.0",
             },
             {
                 "type": "CASH",
                 "value": "10000.00",
-                "percentage_of_portfolio": "50.0",
             },
         ],
         "positions": [],
-        "buying_power": {
-            "cash_only_buying_power": "5000.00",
-            "buying_power": "10000.00",
-            "options_buying_power": "5000.00",
+        "orders": [],
+        "buyingPower": {
+            "cashOnlyBuyingPower": "5000.00",
+            "buyingPower": "10000.00",
+            "optionsBuyingPower": "5000.00",
         },
     }
 
@@ -118,14 +118,12 @@ def _make_quotes_response() -> dict:
             {
                 "instrument": {
                     "symbol": "AAPL",
-                    "name": "Apple Inc.",
                     "type": "EQUITY",
                 },
-                "last_price": {
-                    "last_price": "150.00",
-                },
-                "bid": {"bid_price": "149.90"},
-                "ask": {"ask_price": "150.10"},
+                "outcome": "SUCCESS",
+                "last": "150.00",
+                "bid": "149.90",
+                "ask": "150.10",
                 "volume": 1000000,
             }
         ]
@@ -259,9 +257,7 @@ class TestAsyncGetPortfolio:
 
     def test_get_portfolio_requires_account_id(self):
         """Test get_portfolio raises when no account_id available."""
-        # Construct a client without a default account to simulate missing account_id
-        config = AsyncPublicApiClientConfiguration()
-        client = AsyncPublicApiClient(configuration=config)
+        client = _make_async_client(default_account=None)
         with pytest.raises(ValueError, match="No account ID"):
             asyncio.get_event_loop().run_until_complete(client.get_portfolio())
 
@@ -303,16 +299,23 @@ class TestAsyncPlaceOrder:
         """Test place_order returns NewOrder object."""
         client = _make_async_client()
         client.api_client.post = AsyncMock(return_value={
-            "order_id": _VALID_UUID,
+            "orderId": _VALID_UUID,
         })
         
-        from public_api_sdk.models import OrderRequest, OrderSide, OrderType
+        from public_api_sdk.models import (
+            OrderRequest,
+            OrderSide,
+            OrderType,
+            OrderExpirationRequest,
+            TimeInForce,
+        )
         
         order_request = OrderRequest(
             order_id=_VALID_UUID,
             instrument=OrderInstrument(symbol="AAPL", type=InstrumentType.EQUITY),
             order_side=OrderSide.BUY,
             order_type=OrderType.MARKET,
+            expiration=OrderExpirationRequest(time_in_force=TimeInForce.DAY),
             quantity=Decimal("10"),
         )
         
@@ -366,7 +369,8 @@ class TestCreateAsyncAuthConfig:
 
     def test_creates_auth_provider(self):
         """Test helper creates properly configured auth provider."""
+        from public_api_sdk.auth_config import ApiKeyAuthConfig
         auth = create_async_auth_config("test_key")
         
-        assert isinstance(auth, AsyncApiKeyAuthProvider)
-        assert auth._secret == "test_key"
+        assert isinstance(auth, ApiKeyAuthConfig)
+        assert auth.api_secret_key == "test_key"
