@@ -52,12 +52,23 @@ from .price_stream import PriceStream
 from .public_api_client import PublicApiClient, PublicApiClientConfiguration
 from .subscription_manager import PriceSubscriptionManager
 
+# Async imports
+from .async_public_api_client import (
+    AsyncPublicApiClient,
+    AsyncPublicApiClientConfiguration,
+    create_async_auth_config,
+)
+from .async_price_stream import AsyncPriceStream
+from .async_api_client import AsyncApiClient
+
 __version__ = "0.1.9"
 
 __all__ = [
+    # Auth
     "AuthConfig",
     "ApiKeyAuthConfig", 
     "OAuthAuthConfig",
+    # Models
     "Account",
     "AccountType",
     "HistoryRequest",
@@ -104,10 +115,18 @@ __all__ = [
     "SubscriptionStatus",
     "Subscription",
     "SubscriptionInfo",
+    # Sync Client
     "PublicApiClient",
     "PublicApiClientConfiguration",
     "PriceSubscriptionManager",
     "PriceStream",
+    # Async Client
+    "AsyncPublicApiClient",
+    "AsyncPublicApiClientConfiguration",
+    "AsyncApiClient",
+    "AsyncPriceStream",
+    "create_async_auth_config",
+    # Exceptions
     "APIError",
     "AuthenticationError",
     "RateLimitError",
